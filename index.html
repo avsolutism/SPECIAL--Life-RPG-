@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPECIAL+ Life Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0e0e0f; --surface:#161618; --surface2:#1e1e21; --surface3:#26262a;
+  --border:#2e2e33; --border2:#3a3a40;
+  --text:#f0f0f0; --text2:#9090a0; --text3:#606070;
+  --STR:#e85d30; --PER:#4a9eff; --END:#4caf6e; --CHA:#d45e8a;
+  --INT:#8b72e8; --AGI:#1db87a; --LCK:#f0a030; --DIS:#888898; --VIT:#e04a4a;
+  --accent:#f0a030;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;font-size:14px;height:100vh;overflow:hidden;}
+
+/* ── DESKTOP LAYOUT ─────────────────────────────────────────────────── */
+.app{display:grid;grid-template-columns:300px 1fr;height:100vh;}
+
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.sidebar-top{padding:18px 18px 0;flex-shrink:0;}
+.sidebar-scroll{flex:1;overflow-y:auto;padding:0 18px 12px;}
+.sidebar-bottom{padding:10px 18px 14px;flex-shrink:0;border-top:1px solid var(--border);}
+
+.main{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.main-top{padding:18px 22px 0;flex-shrink:0;}
+.main-scroll{flex:1;overflow-y:auto;padding:0 22px 130px;}
+
+/* ── MOBILE NAV ────────────────────────────────────────────────────── */
+.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);z-index:50;padding:0;}
+.mobile-nav-inner{display:flex;}
+.mnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 14px;border:none;background:none;color:var(--text3);cursor:pointer;font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;transition:color 0.15s;border-top:2px solid transparent;}
+.mnav-btn.active{color:var(--accent);border-top-color:var(--accent);}
+.mnav-icon{font-size:18px;line-height:1;}
+
+.mobile-panel{display:none;}
+
+/* ── APP HEADER ─────────────────────────────────────────────────────── */
+.app-title{font-size:11px;letter-spacing:0.2em;color:var(--text3);text-transform:uppercase;margin-bottom:3px;}
+.app-name{font-size:19px;font-weight:800;color:var(--text);letter-spacing:-0.02em;margin-bottom:8px;}
+.app-name span{color:var(--accent);}
+
+/* ── DATE DISPLAY ───────────────────────────────────────────────────── */
+.date-strip{display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 11px;margin-bottom:10px;}
+.date-text{font-size:11px;font-weight:700;color:var(--text2);font-family:'Space Mono',monospace;letter-spacing:0.05em;}
+.date-day{font-size:10px;color:var(--text3);}
+.day-num{font-size:12px;font-weight:800;color:var(--accent);font-family:'Space Mono',monospace;}
+
+/* ── SCORE ──────────────────────────────────────────────────────────── */
+.score-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.score-label{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);}
+.score-val{font-size:22px;font-weight:800;color:var(--accent);font-family:'Space Mono',monospace;}
+
+.view-toggle{display:flex;gap:4px;margin-bottom:12px;}
+.vtab{flex:1;font-size:10px;letter-spacing:0.05em;text-transform:uppercase;padding:5px 6px;border-radius:6px;cursor:pointer;color:var(--text3);border:1px solid var(--border);background:none;font-family:'Syne',sans-serif;font-weight:700;transition:all 0.15s;text-align:center;}
+.vtab:hover{color:var(--text2);}
+.vtab.active{color:var(--text);background:var(--surface2);border-color:var(--border2);}
+
+/* ── STATS ──────────────────────────────────────────────────────────── */
+.stat-block{display:flex;flex-direction:column;gap:7px;}
+.stat-row{display:flex;flex-direction:column;gap:3px;}
+.stat-header{display:flex;justify-content:space-between;align-items:center;}
+.stat-label{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text2);font-family:'Space Mono',monospace;}
+.stat-nums{display:flex;gap:6px;align-items:baseline;}
+.stat-main{font-size:13px;font-weight:700;font-family:'Space Mono',monospace;}
+.stat-sub{font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;}
+.bar-track{height:4px;background:var(--surface3);border-radius:3px;overflow:hidden;position:relative;}
+.bar-base-marker{height:100%;background:var(--border2);position:absolute;top:0;left:0;border-radius:3px;}
+.bar-fill{height:100%;border-radius:3px;transition:width 0.4s cubic-bezier(0.4,0,0.2,1);position:absolute;top:0;left:0;}
+
+/* ── LOG ────────────────────────────────────────────────────────────── */
+.log-label{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:7px;margin-top:14px;}
+.log-list{display:flex;flex-direction:column;gap:4px;}
+.log-entry{font-size:11px;padding:5px 8px;background:var(--surface2);border-radius:6px;display:flex;flex-direction:column;gap:2px;}
+.log-name{color:var(--text2);font-family:'Syne',sans-serif;font-size:11px;font-weight:500;}
+.log-changes{color:var(--text3);font-size:10px;font-family:'Space Mono',monospace;}
+
+/* ── TABS ───────────────────────────────────────────────────────────── */
+.tabs-row{display:flex;gap:4px;flex-wrap:wrap;padding-bottom:11px;border-bottom:1px solid var(--border);margin-bottom:12px;}
+.tab{font-size:11px;letter-spacing:0.06em;text-transform:uppercase;padding:5px 9px;border-radius:6px;cursor:pointer;color:var(--text3);border:1px solid transparent;background:none;font-family:'Syne',sans-serif;font-weight:700;transition:all 0.15s;white-space:nowrap;}
+.tab:hover{color:var(--text2);border-color:var(--border);}
+.tab.active{color:var(--text);background:var(--surface2);border-color:var(--border2);}
+.tab-manage{font-size:10px;padding:5px 8px;color:var(--accent);border-color:rgba(240,160,48,0.3);}
+.tab-manage:hover{background:rgba(240,160,48,0.08);color:var(--accent);}
+
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.section-title{font-size:15px;font-weight:700;}
+.task-count{font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;}
+
+.search-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Syne',sans-serif;font-size:13px;outline:none;transition:border-color 0.15s;margin-bottom:11px;}
+.search-input:focus{border-color:var(--border2);}
+.search-input::placeholder{color:var(--text3);}
+
+.edit-toggle{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text3);cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;transition:all 0.15s;}
+.edit-toggle.on{border-color:var(--accent);color:var(--accent);background:rgba(240,160,48,0.08);}
+
+/* ── TASKS ──────────────────────────────────────────────────────────── */
+.tasks-grid{display:flex;flex-direction:column;gap:7px;}
+.task-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 13px;cursor:pointer;transition:all 0.15s;user-select:none;}
+.task-card:hover{border-color:var(--border2);background:var(--surface2);}
+.task-card:active{transform:scale(0.99);}
+.task-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:7px;}
+.task-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.3;}
+.task-cat{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;padding:3px 6px;border-radius:4px;white-space:nowrap;flex-shrink:0;font-weight:700;}
+.task-fx{display:flex;flex-wrap:wrap;gap:3px;}
+.fx-tag{font-size:10px;padding:2px 5px;border-radius:4px;font-family:'Space Mono',monospace;font-weight:700;}
+.fx-pos{background:rgba(76,175,110,0.1);color:#4caf6e;}
+.fx-neg{background:rgba(224,74,74,0.1);color:#e04a4a;}
+.task-actions{display:flex;gap:6px;margin-top:9px;}
+.task-edit-btn,.task-del-btn{font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid var(--border);cursor:pointer;font-family:'Syne',sans-serif;font-weight:600;transition:all 0.15s;}
+.task-edit-btn{background:none;color:var(--text3);}
+.task-edit-btn:hover{color:var(--text2);border-color:var(--border2);}
+.task-del-btn{background:none;color:rgba(224,74,74,0.5);border-color:transparent;}
+.task-del-btn:hover{color:#e04a4a;border-color:rgba(224,74,74,0.3);}
+
+.add-btn{display:flex;align-items:center;gap:8px;background:none;border:1px dashed var(--border2);border-radius:10px;padding:11px 14px;color:var(--text3);cursor:pointer;font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;width:100%;transition:all 0.15s;margin-top:9px;}
+.add-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ── QUEUE BAR ──────────────────────────────────────────────────────── */
+.queue-bar{display:none;position:fixed;bottom:0;left:300px;right:0;background:var(--surface);border-top:1px solid var(--border2);padding:11px 22px;align-items:center;gap:12px;z-index:10;}
+.queue-info{flex:1;min-width:0;}
+.queue-count{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;}
+.queue-names{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;font-family:'Space Mono',monospace;}
+.commit-btn{background:var(--accent);color:#000;border:none;border-radius:8px;padding:9px 18px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:opacity 0.15s;flex-shrink:0;}
+.commit-btn:hover{opacity:0.85;}
+.clear-queue-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text3);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:all 0.15s;flex-shrink:0;}
+.clear-queue-btn:hover{color:var(--text2);border-color:var(--border2);}
+
+/* ── SIDEBAR BOTTOM BUTTONS ─────────────────────────────────────────── */
+.sidebar-btn-group{display:flex;flex-direction:column;gap:6px;}
+.end-day-btn{background:var(--accent);color:#000;border:none;border-radius:8px;padding:9px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:opacity 0.15s;width:100%;}
+.end-day-btn:hover{opacity:0.85;}
+.reset-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text3);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:all 0.15s;width:100%;}
+.reset-btn:hover{border-color:#e04a4a;color:#e04a4a;}
+
+/* ── MODALS ─────────────────────────────────────────────────────────── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:22px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:18px;}
+.form-group{margin-bottom:13px;}
+.form-label{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:5px;display:block;font-weight:700;}
+.form-input,.form-select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font-family:'Syne',sans-serif;font-size:13px;outline:none;transition:border-color 0.15s;}
+.form-input:focus,.form-select:focus{border-color:var(--accent);}
+.form-select option{background:var(--surface);}
+.stat-editor{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+.stat-edit-row{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px;display:flex;flex-direction:column;gap:5px;align-items:center;}
+.stat-edit-label{font-size:10px;letter-spacing:0.1em;color:var(--text2);font-weight:700;font-family:'Space Mono',monospace;}
+.stat-edit-controls{display:flex;align-items:center;gap:5px;}
+.stat-btn{width:22px;height:22px;border-radius:5px;border:1px solid var(--border2);background:var(--surface3);color:var(--text);cursor:pointer;font-size:14px;font-weight:700;line-height:1;transition:all 0.1s;display:flex;align-items:center;justify-content:center;}
+.stat-btn:hover{background:var(--border);}
+.stat-val-display{font-size:13px;font-weight:700;font-family:'Space Mono',monospace;min-width:28px;text-align:center;}
+.val-pos{color:#4caf6e;} .val-neg{color:#e04a4a;} .val-zero{color:var(--text3);}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;align-items:center;}
+.btn-primary{background:var(--accent);color:#000;border:none;border-radius:8px;padding:9px 16px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:opacity 0.15s;}
+.btn-primary:hover{opacity:0.85;}
+.btn-ghost{background:none;color:var(--text3);border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
+.btn-ghost:hover{color:var(--text2);border-color:var(--border2);}
+.btn-danger{background:none;color:#e04a4a;border:1px solid rgba(224,74,74,0.3);border-radius:8px;padding:9px 16px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:all 0.15s;margin-right:auto;}
+.btn-danger:hover{background:rgba(224,74,74,0.1);}
+
+.cat-list{display:flex;flex-direction:column;gap:7px;margin-bottom:14px;}
+.cat-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;}
+.cat-color-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.cat-item-name{flex:1;font-size:13px;font-weight:500;}
+.cat-item-count{font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;}
+.cat-item-edit{background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:0 4px;font-family:'Syne',sans-serif;font-weight:600;transition:color 0.15s;}
+.cat-item-edit:hover{color:var(--text2);}
+.cat-item-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;padding:0 2px;transition:color 0.15s;}
+.cat-item-del:hover{color:#e04a4a;}
+.add-cat-row{display:flex;gap:7px;align-items:center;}
+
+/* ── CALENDAR ───────────────────────────────────────────────────────── */
+.cal-section{margin-top:0;}
+.cal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.cal-month{font-size:13px;font-weight:700;}
+.cal-nav{display:flex;gap:4px;}
+.cal-nav-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;color:var(--text3);cursor:pointer;font-family:'Space Mono',monospace;font-size:12px;transition:all 0.15s;}
+.cal-nav-btn:hover{border-color:var(--border2);color:var(--text2);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-dow{text-align:center;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);font-family:'Space Mono',monospace;padding:4px 0;font-weight:700;}
+.cal-cell{aspect-ratio:1;border-radius:6px;border:1px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;position:relative;background:var(--surface2);}
+.cal-cell:hover{border-color:var(--border2);}
+.cal-cell.empty{background:transparent;cursor:default;border:none;}
+.cal-cell.today{border-color:var(--accent)!important;}
+.cal-cell.has-data{background:var(--surface3);}
+.cal-cell.has-data::after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--accent);}
+.cal-cell.selected{background:rgba(240,160,48,0.1);border-color:var(--accent);}
+.cal-num{font-size:11px;font-weight:700;font-family:'Space Mono',monospace;color:var(--text2);}
+.cal-cell.today .cal-num{color:var(--accent);}
+.cal-cell.other-month .cal-num{color:var(--text3);opacity:0.4;}
+.cal-cell.other-month{background:transparent;}
+
+.day-detail{margin-top:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;}
+.day-detail-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.day-detail-date{font-size:11px;font-weight:700;color:var(--text2);font-family:'Space Mono',monospace;}
+.day-detail-score{font-size:11px;font-weight:700;color:var(--accent);font-family:'Space Mono',monospace;}
+.day-stat-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;}
+.day-stat-id{font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;width:32px;}
+.day-stat-bar-wrap{flex:1;margin:0 8px;}
+.day-stat-bar-track{height:3px;background:var(--surface3);border-radius:2px;position:relative;overflow:hidden;}
+.day-stat-bar-fill{height:100%;border-radius:2px;position:absolute;top:0;left:0;}
+.day-stat-val{font-size:10px;font-weight:700;font-family:'Space Mono',monospace;min-width:28px;text-align:right;}
+.day-detail-tasks{margin-top:10px;border-top:1px solid var(--border);padding-top:8px;}
+.day-detail-tasks-label{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;}
+.day-task-chip{display:inline-block;font-size:10px;padding:2px 6px;background:var(--surface3);border-radius:4px;margin:2px;color:var(--text2);font-family:'Space Mono',monospace;}
+.no-data-msg{font-size:11px;color:var(--text3);text-align:center;padding:14px 0;}
+
+/* ── END DAY MODAL ──────────────────────────────────────────────────── */
+.end-day-summary{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.end-day-stat-row{display:flex;align-items:center;gap:8px;}
+.end-day-stat-id{font-size:11px;font-family:'Space Mono',monospace;font-weight:700;width:34px;}
+.end-day-change{font-size:11px;font-family:'Space Mono',monospace;min-width:40px;text-align:right;}
+.end-day-bar-wrap{flex:1;}
+.end-day-bar-track{height:4px;background:var(--surface3);border-radius:3px;overflow:hidden;position:relative;}
+.end-day-bar-fill{height:100%;border-radius:3px;position:absolute;top:0;left:0;}
+
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* ── RESPONSIVE MOBILE ──────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  body{overflow:auto;height:auto;}
+  .app{display:block;height:auto;}
+  .sidebar{display:none;}
+  .main{display:none;}
+
+  .mobile-nav{display:block;}
+  .mobile-panel{display:none;padding:16px 16px 80px;}
+  .mobile-panel.active{display:block;}
+
+  .queue-bar{left:0;bottom:56px;}
+
+  .section-title{font-size:14px;}
+  .tasks-grid{gap:6px;}
+  .task-card{padding:10px 12px;}
+
+  .cal-cell{border-radius:5px;}
+  .cal-num{font-size:10px;}
+
+  .stat-editor{grid-template-columns:repeat(3,1fr);}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ DESKTOP LAYOUT ═══════════════════════════════════════════════════════ -->
+<div class="app" id="desktopApp">
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="app-title">Life RPG</div>
+      <div class="app-name">SPECIAL<span>+</span></div>
+      <div class="date-strip">
+        <div>
+          <div class="date-text" id="sidebarDate">---</div>
+          <div class="date-day" id="sidebarDOW">---</div>
+        </div>
+        <div class="day-num" id="sidebarDayNum">Day 1</div>
+      </div>
+      <div class="score-card">
+        <div>
+          <div class="score-label">Session delta</div>
+          <div class="score-val" id="totalScore">+0</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;" id="sessionCount">0 actions</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;">today</div>
+        </div>
+      </div>
+      <div class="view-toggle">
+        <button class="vtab active" id="vtab-compound" onclick="setView('compound')">Total value</button>
+        <button class="vtab" id="vtab-delta" onclick="setView('delta')">From baseline</button>
+      </div>
+    </div>
+    <div class="sidebar-scroll">
+      <div class="stat-block" id="statBlock"></div>
+      <div class="log-label">Today's actions</div>
+      <div class="log-list" id="logList">
+        <div style="font-size:11px;color:var(--text3);padding:6px 8px;">No actions yet.</div>
+      </div>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-btn-group">
+        <button class="end-day-btn" onclick="openEndDayModal()">End Day</button>
+        <button class="reset-btn" onclick="confirmReset()">Reset session</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="main-top">
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button class="vtab active" id="mainTab-tasks" onclick="setMainTab('tasks')" style="flex:none;padding:5px 14px;">Tasks</button>
+        <button class="vtab" id="mainTab-calendar" onclick="setMainTab('calendar')" style="flex:none;padding:5px 14px;">Calendar</button>
+      </div>
+
+      <!-- TASKS PANEL TOP -->
+      <div id="desktopTasksTop">
+        <div class="section-header">
+          <div class="section-title">Tasks</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="task-count" id="taskCount"></span>
+            <button class="edit-toggle" id="editToggle" onclick="toggleEditMode()">Edit mode</button>
+          </div>
+        </div>
+        <div class="tabs-row" id="tabBar"></div>
+        <input class="search-input" type="text" id="searchInput" placeholder="Search tasks..." oninput="renderTasks()">
+      </div>
+
+      <!-- CALENDAR PANEL TOP -->
+      <div id="desktopCalTop" style="display:none;">
+        <div class="section-header">
+          <div class="section-title">History</div>
+          <div style="font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;" id="calDaysTracked">0 days tracked</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-scroll">
+      <!-- TASKS -->
+      <div id="desktopTasksContent">
+        <div class="tasks-grid" id="tasksGrid"></div>
+        <button class="add-btn" onclick="openAddModal()">+ Add task</button>
+      </div>
+      <!-- CALENDAR -->
+      <div id="desktopCalContent" style="display:none;">
+        <div class="cal-section" id="calSection"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ══ MOBILE PANELS ══════════════════════════════════════════════════════════ -->
+<div class="mobile-panel active" id="mPanel-stats">
+  <div class="app-title" style="margin-bottom:2px;">Life RPG</div>
+  <div class="app-name" style="margin-bottom:8px;">SPECIAL<span style="color:var(--accent)">+</span></div>
+  <div class="date-strip" style="margin-bottom:10px;">
+    <div>
+      <div class="date-text" id="mSidebarDate">---</div>
+      <div class="date-day" id="mSidebarDOW">---</div>
+    </div>
+    <div class="day-num" id="mSidebarDayNum">Day 1</div>
+  </div>
+  <div class="score-card" style="margin-bottom:12px;">
+    <div>
+      <div class="score-label">Session delta</div>
+      <div class="score-val" id="mTotalScore">+0</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;" id="mSessionCount">0 actions</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px;">today</div>
+    </div>
+  </div>
+  <div class="view-toggle" style="margin-bottom:12px;">
+    <button class="vtab active" id="mvtab-compound" onclick="setView('compound')">Total value</button>
+    <button class="vtab" id="mvtab-delta" onclick="setView('delta')">From baseline</button>
+  </div>
+  <div class="stat-block" id="mStatBlock"></div>
+  <div class="log-label">Today's actions</div>
+  <div class="log-list" id="mLogList">
+    <div style="font-size:11px;color:var(--text3);padding:6px 8px;">No actions yet.</div>
+  </div>
+  <div style="margin-top:14px;display:flex;flex-direction:column;gap:6px;">
+    <button class="end-day-btn" onclick="openEndDayModal()">End Day</button>
+    <button class="reset-btn" onclick="confirmReset()">Reset session</button>
+  </div>
+</div>
+
+<div class="mobile-panel" id="mPanel-tasks">
+  <div class="section-header">
+    <div class="section-title">Tasks</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span class="task-count" id="mTaskCount"></span>
+      <button class="edit-toggle" id="mEditToggle" onclick="toggleEditMode()">Edit mode</button>
+    </div>
+  </div>
+  <div class="tabs-row" id="mTabBar"></div>
+  <input class="search-input" type="text" id="mSearchInput" placeholder="Search tasks..." oninput="renderTasks()">
+  <div class="tasks-grid" id="mTasksGrid"></div>
+  <button class="add-btn" onclick="openAddModal()">+ Add task</button>
+</div>
+
+<div class="mobile-panel" id="mPanel-calendar">
+  <div class="section-header">
+    <div class="section-title">History</div>
+    <div style="font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;" id="mCalDaysTracked">0 days tracked</div>
+  </div>
+  <div class="cal-section" id="mCalSection"></div>
+</div>
+
+<!-- ══ MOBILE NAV ═══════════════════════════════════════════════════════════ -->
+<nav class="mobile-nav">
+  <div class="mobile-nav-inner">
+    <button class="mnav-btn active" id="mnav-stats" onclick="setMobilePanel('stats')">
+      <span class="mnav-icon">◈</span>Stats
+    </button>
+    <button class="mnav-btn" id="mnav-tasks" onclick="setMobilePanel('tasks')">
+      <span class="mnav-icon">◻</span>Tasks
+    </button>
+    <button class="mnav-btn" id="mnav-calendar" onclick="setMobilePanel('calendar')">
+      <span class="mnav-icon">◫</span>Calendar
+    </button>
+  </div>
+</nav>
+
+<!-- ══ QUEUE BAR ══════════════════════════════════════════════════════════════ -->
+<div class="queue-bar" id="queueBar">
+  <div class="queue-info">
+    <div class="queue-count" id="queueCount"></div>
+    <div class="queue-names" id="queueNames"></div>
+  </div>
+  <button class="clear-queue-btn" onclick="clearQueue()">Clear</button>
+  <button class="commit-btn" onclick="commitQueue()">Apply tasks</button>
+</div>
+
+<!-- ══ TASK MODAL ══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Add task</div>
+    <div class="form-group">
+      <label class="form-label">Task name</label>
+      <input class="form-input" id="taskNameInput" placeholder="e.g. Morning run" type="text">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Category</label>
+      <select class="form-select" id="taskCatInput"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Stat effects — click +/- to set</label>
+      <div class="stat-editor" id="statEditor"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-danger" id="deleteTaskBtn" style="display:none;" onclick="deleteCurrentTask()">Delete task</button>
+      <button class="btn-ghost" onclick="closeModal('taskModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveTask()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CAT MODAL ══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="catModal">
+  <div class="modal" style="max-width:430px;">
+    <div class="modal-title">Manage categories</div>
+    <div class="cat-list" id="catList"></div>
+    <div class="add-cat-row">
+      <input class="form-input" id="newCatName" placeholder="New category name" type="text" style="flex:1;">
+      <input type="color" id="newCatColor" value="#4a9eff" style="width:38px;height:38px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);cursor:pointer;padding:3px;flex-shrink:0;">
+      <button class="btn-primary" onclick="addCategory()" style="padding:9px 13px;flex-shrink:0;">Add</button>
+    </div>
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="btn-ghost" onclick="closeModal('catModal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ END DAY MODAL ══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="endDayModal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-title">End Day</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:14px;font-family:'Space Mono',monospace;" id="endDayDateLabel"></div>
+    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;letter-spacing:0.06em;text-transform:uppercase;">Today's stat changes</div>
+    <div class="end-day-summary" id="endDaySummary"></div>
+    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;letter-spacing:0.06em;text-transform:uppercase;">Tasks completed</div>
+    <div id="endDayTasks" style="margin-bottom:14px;"></div>
+    <div style="font-size:11px;color:var(--text3);background:var(--surface2);border-radius:8px;padding:10px 12px;border:1px solid var(--border);">
+      Your stats will carry forward to tomorrow as the new baseline. The day's data is saved to your calendar.
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('endDayModal')">Cancel</button>
+      <button class="btn-primary" onclick="commitEndDay()">Save & Start Tomorrow</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DAY DETAIL MODAL ══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="dayDetailModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-title" id="dayDetailTitle">Day Details</div>
+    <div id="dayDetailContent"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('dayDetailModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STAT_DEFS = [
+  {id:'STR',name:'Strength',   color:'var(--STR)',hex:'#e85d30'},
+  {id:'PER',name:'Perception', color:'var(--PER)',hex:'#4a9eff'},
+  {id:'END',name:'Endurance',  color:'var(--END)',hex:'#4caf6e'},
+  {id:'CHA',name:'Charisma',   color:'var(--CHA)',hex:'#d45e8a'},
+  {id:'INT',name:'Intelligence',color:'var(--INT)',hex:'#8b72e8'},
+  {id:'AGI',name:'Agility',    color:'var(--AGI)',hex:'#1db87a'},
+  {id:'LCK',name:'Luck',       color:'var(--LCK)',hex:'#f0a030'},
+  {id:'DIS',name:'Discipline', color:'var(--DIS)',hex:'#888898'},
+  {id:'VIT',name:'Vitality',   color:'var(--VIT)',hex:'#e04a4a'},
+];
+
+const BASE = 5;
+
+const DEFAULT_CATS = [
+  {name:'Body',   color:'#4caf6e'},
+  {name:'Mind',   color:'#8b72e8'},
+  {name:'Digital',color:'#4a9eff'},
+  {name:'Work',   color:'#f0a030'},
+  {name:'Social', color:'#d45e8a'},
+  {name:'Life',   color:'#888898'},
+];
+
+const DEFAULT_TASKS = [
+  {id:1,  n:'Exercise / gym',           cat:'Body',    fx:{STR:+2,END:+2,VIT:+2,AGI:+1,DIS:+1,INT:-1}},
+  {id:2,  n:'Walking outdoors',         cat:'Body',    fx:{STR:+1,PER:+2,VIT:+1,AGI:+1,LCK:+1}},
+  {id:3,  n:'Morning stretching',       cat:'Body',    fx:{STR:+1,AGI:+2,VIT:+1,DIS:+1,END:+1}},
+  {id:4,  n:'Running / jogging',        cat:'Body',    fx:{STR:+2,END:+3,VIT:+1,AGI:+1,DIS:+1,INT:-1}},
+  {id:5,  n:'Skipping meals',           cat:'Body',    fx:{VIT:-2,STR:-1,END:-1,DIS:-1,INT:-1}},
+  {id:6,  n:'Eating junk food',         cat:'Body',    fx:{VIT:-2,END:-1,DIS:-1,LCK:-1}},
+  {id:7,  n:'Cooking a healthy meal',   cat:'Body',    fx:{VIT:+2,DIS:+1,INT:+1,AGI:+1}},
+  {id:8,  n:'Good sleep (7-8h)',        cat:'Body',    fx:{VIT:+2,END:+2,INT:+1,AGI:+1,LCK:+1}},
+  {id:9,  n:'Poor sleep night',         cat:'Body',    fx:{VIT:-2,END:-2,INT:-1,AGI:-1,LCK:-1}},
+  {id:10, n:'Drinking enough water',    cat:'Body',    fx:{VIT:+1,END:+1,INT:+1,AGI:+1}},
+  {id:11, n:'Reading a book',           cat:'Mind',    fx:{INT:+2,PER:+1,DIS:+1,STR:-1,AGI:-1}},
+  {id:12, n:'Meditation',              cat:'Mind',    fx:{PER:+2,DIS:+2,VIT:+1,LCK:+1,INT:+1}},
+  {id:13, n:'Deep focus / flow work',   cat:'Mind',    fx:{INT:+3,DIS:+2,AGI:-1,VIT:-1}},
+  {id:14, n:'Learning a new skill',     cat:'Mind',    fx:{INT:+2,AGI:+1,DIS:+1,LCK:+1}},
+  {id:15, n:'Journaling',              cat:'Mind',    fx:{INT:+1,PER:+2,DIS:+1,VIT:+1}},
+  {id:16, n:'Procrastinating',         cat:'Mind',    fx:{DIS:-2,LCK:-1,INT:-1,VIT:-1}},
+  {id:17, n:'Watching a documentary',  cat:'Mind',    fx:{INT:+1,PER:+1,DIS:-1}},
+  {id:18, n:'Solving a puzzle / quiz', cat:'Mind',    fx:{INT:+2,PER:+1,AGI:+1,DIS:+1}},
+  {id:19, n:'Planning your week',      cat:'Mind',    fx:{DIS:+2,INT:+1,AGI:+1,LCK:+1}},
+  {id:20, n:'Daydreaming / zoning out',cat:'Mind',    fx:{LCK:+1,PER:-1,DIS:-1,INT:-1}},
+  {id:21, n:'Using phone casually',    cat:'Digital', fx:{PER:-2,INT:+1,END:-1,DIS:-1}},
+  {id:22, n:'Doomscrolling',           cat:'Digital', fx:{PER:-2,INT:-1,DIS:-2,VIT:-1,LCK:-1}},
+  {id:23, n:'Watching reels / shorts', cat:'Digital', fx:{PER:-2,DIS:-2,INT:-1,END:-1}},
+  {id:24, n:'Online course / learning',cat:'Digital', fx:{INT:+2,DIS:+1,AGI:+1,PER:-1}},
+  {id:25, n:'Gaming (casual)',         cat:'Digital', fx:{AGI:+1,INT:+1,PER:+1,STR:-1,VIT:-1,DIS:-1}},
+  {id:26, n:'Gaming (competitive)',    cat:'Digital', fx:{AGI:+2,INT:+1,PER:+1,STR:-1,VIT:-2,DIS:-1}},
+  {id:27, n:'Listening to a podcast',  cat:'Digital', fx:{INT:+1,PER:+1,DIS:+1}},
+  {id:28, n:'Office desk work',        cat:'Work',    fx:{STR:-1,INT:+2,AGI:-1,VIT:-1}},
+  {id:29, n:'Attending meetings',      cat:'Work',    fx:{CHA:+1,INT:+1,END:-1,STR:-1,VIT:-1}},
+  {id:30, n:'Presenting to a group',   cat:'Work',    fx:{CHA:+2,INT:+1,DIS:+1,END:-1,STR:-1}},
+  {id:31, n:'Writing a report / doc',  cat:'Work',    fx:{INT:+2,DIS:+2,PER:+1,STR:-1,VIT:-1}},
+  {id:32, n:'Missing a deadline',      cat:'Work',    fx:{DIS:-2,LCK:-2,CHA:-1,INT:-1}},
+  {id:33, n:'Completing a hard task',  cat:'Work',    fx:{DIS:+2,INT:+1,LCK:+1,CHA:+1}},
+  {id:34, n:'Taking a work break',     cat:'Work',    fx:{VIT:+1,PER:+1,AGI:+1,DIS:-1}},
+  {id:35, n:'Working overtime',        cat:'Work',    fx:{DIS:+1,INT:+1,STR:-1,VIT:-2,END:-1,AGI:-1}},
+  {id:36, n:'Wearing headphones',      cat:'Social',  fx:{PER:-2,DIS:+1,INT:+1}},
+  {id:37, n:'Social gathering',        cat:'Social',  fx:{CHA:+2,LCK:+1,END:-1,DIS:-1,INT:-1}},
+  {id:38, n:'Helping someone',         cat:'Social',  fx:{CHA:+1,LCK:+2,DIS:+1}},
+  {id:39, n:'Cancelling plans',        cat:'Social',  fx:{CHA:-1,DIS:-1,LCK:-1,VIT:+1}},
+  {id:40, n:'Dressing well / grooming',cat:'Social',  fx:{CHA:+2,DIS:+1,LCK:+1,PER:+1}},
+  {id:41, n:'Commute (public transit)',cat:'Life',    fx:{PER:+1,LCK:+1,AGI:+1,STR:-1,END:-1}},
+  {id:42, n:'Commute (driving)',       cat:'Life',    fx:{AGI:+1,STR:-1,END:-1,PER:-1,DIS:-1}},
+  {id:43, n:'Household chores',        cat:'Life',    fx:{STR:+1,DIS:+1,AGI:+1,VIT:+1,INT:-1}},
+  {id:44, n:'Running errands',         cat:'Life',    fx:{AGI:+1,DIS:+1,STR:+1,END:-1}},
+  {id:45, n:'Napping (20-30 min)',     cat:'Life',    fx:{VIT:+1,END:+1,INT:+1,DIS:-1}},
+  {id:46, n:'Oversleeping',            cat:'Life',    fx:{VIT:-1,DIS:-2,LCK:-1,AGI:-1}},
+  {id:47, n:'Spending time in nature', cat:'Life',    fx:{VIT:+1,PER:+2,LCK:+2,STR:+1,INT:+1}},
+  {id:48, n:'Sitting idle for hours',  cat:'Life',    fx:{STR:-1,END:-1,VIT:-1,DIS:-1,AGI:-1}},
+  {id:49, n:'Cold shower',             cat:'Life',    fx:{VIT:+1,DIS:+2,END:+1,AGI:+1,STR:+1}},
+  {id:50, n:'Consuming news / media',  cat:'Life',    fx:{PER:+1,INT:+1,LCK:-1,DIS:-1,VIT:-1}},
+];
+
+// ── STATE ──────────────────────────────────────────────────────────────────────
+let state = load();
+let activeCat = 'All';
+let editMode = false;
+let editingId = null;
+let nextId = state.nextId || 51;
+let modalFx = {};
+let queue = new Set();
+let viewMode = 'compound';
+let calViewDate = new Date();  // month being shown in calendar
+let mainTabMode = 'tasks';     // 'tasks' | 'calendar'
+let mobilePanel = 'stats';
+
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem('rpg_v4'));
+    if (s && s.tasks) return s;
+    // migrate from v3
+    const old = JSON.parse(localStorage.getItem('rpg_v3'));
+    if (old && old.tasks) {
+      old.history = [];
+      old.dayStart = dateKey(new Date());
+      old.dayCount = 1;
+      old.sessionBaseline = Object.fromEntries(STAT_DEFS.map(s => [s.id, BASE]));
+      return old;
+    }
+  } catch(e){}
+  return freshState();
+}
+
+function freshState() {
+  const today = dateKey(new Date());
+  return {
+    stats: Object.fromEntries(STAT_DEFS.map(s => [s.id, BASE])),
+    sessionBaseline: Object.fromEntries(STAT_DEFS.map(s => [s.id, BASE])),
+    tasks: JSON.parse(JSON.stringify(DEFAULT_TASKS)),
+    cats: JSON.parse(JSON.stringify(DEFAULT_CATS)),
+    log: [],
+    sessionCount: 0,
+    nextId: 51,
+    history: [],   // [{date, stats, baseline, log, taskNames}]
+    dayStart: today,
+    dayCount: 1,
+  };
+}
+
+function save() {
+  state.nextId = nextId;
+  localStorage.setItem('rpg_v4', JSON.stringify(state));
+}
+
+function clamp(v) { return Math.max(1, Math.min(99, v)); }
+function safeCatClass(name) { return name.replace(/[^a-zA-Z0-9]/g,'_'); }
+
+function dateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function parseKey(k) {
+  const [y,m,d] = k.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+
+function formatDateShort(d) {
+  return d.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+}
+
+function todayKey() { return dateKey(new Date()); }
+
+// ── DATE DISPLAY ──────────────────────────────────────────────────────────────
+function renderDateStrip() {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+  const dow = now.toLocaleDateString('en-IN', {weekday:'long'});
+  const dayNum = 'Day ' + (state.dayCount || 1);
+  ['sidebarDate','mSidebarDate'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = dateStr; });
+  ['sidebarDOW','mSidebarDOW'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = dow; });
+  ['sidebarDayNum','mSidebarDayNum'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = dayNum; });
+}
+
+// ── MOBILE NAV ────────────────────────────────────────────────────────────────
+function setMobilePanel(panel) {
+  mobilePanel = panel;
+  ['stats','tasks','calendar'].forEach(p => {
+    document.getElementById('mPanel-'+p).classList.toggle('active', p===panel);
+    document.getElementById('mnav-'+p).classList.toggle('active', p===panel);
+  });
+  if (panel === 'calendar') renderCalendar('mCalSection','mCalDaysTracked');
+}
+
+// ── MAIN TAB (DESKTOP) ────────────────────────────────────────────────────────
+function setMainTab(tab) {
+  mainTabMode = tab;
+  document.getElementById('mainTab-tasks').classList.toggle('active', tab==='tasks');
+  document.getElementById('mainTab-calendar').classList.toggle('active', tab==='calendar');
+  document.getElementById('desktopTasksTop').style.display = tab==='tasks' ? '' : 'none';
+  document.getElementById('desktopCalTop').style.display = tab==='calendar' ? '' : 'none';
+  document.getElementById('desktopTasksContent').style.display = tab==='tasks' ? '' : 'none';
+  document.getElementById('desktopCalContent').style.display = tab==='calendar' ? '' : 'none';
+  if (tab==='calendar') renderCalendar('calSection','calDaysTracked');
+}
+
+// ── VIEW ──────────────────────────────────────────────────────────────────────
+function setView(v) {
+  viewMode = v;
+  ['vtab-compound','vtab-delta','mvtab-compound','mvtab-delta'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isCompound = id.includes('compound');
+    el.classList.toggle('active', (v==='compound') === isCompound);
+  });
+  renderStats();
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function renderStats() {
+  const total = Object.values(state.stats).reduce((a,b) => a+b, 0);
+  const sessionDelta = total - Object.values(state.sessionBaseline).reduce((a,b) => a+b, 0);
+  const scoreStr = (sessionDelta >= 0 ? '+' : '') + sessionDelta;
+  const countStr = (state.sessionCount||0) + ' actions';
+
+  ['totalScore','mTotalScore'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=scoreStr; });
+  ['sessionCount','mSessionCount'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=countStr; });
+
+  const html = STAT_DEFS.map(s => {
+    const v = state.stats[s.id];
+    const base = state.sessionBaseline[s.id] || BASE;
+    const d = v - base;
+    let mainDisp, subDisp, barPct, barColor;
+    if (viewMode === 'compound') {
+      mainDisp = String(v);
+      subDisp = (d >= 0 ? '+' : '') + d + ' today';
+      barPct = Math.min((v / 20) * 100, 100);
+      barColor = s.hex;
+    } else {
+      mainDisp = (d >= 0 ? '+' : '') + d;
+      subDisp = 'total ' + v;
+      barPct = Math.max(0, Math.min(100, 50 + d * 5));
+      barColor = d > 0 ? '#4caf6e' : d < 0 ? '#e04a4a' : '#606070';
+    }
+    const numColor = viewMode === 'compound' ? s.hex : (d > 0 ? '#4caf6e' : d < 0 ? '#e04a4a' : 'var(--text3)');
+    const basePct = viewMode === 'compound' ? (base / 20) * 100 : 50;
+    return `<div class="stat-row">
+      <div class="stat-header">
+        <span class="stat-label">${s.id} · ${s.name}</span>
+        <div class="stat-nums">
+          <span class="stat-sub">${subDisp}</span>
+          <span class="stat-main" style="color:${numColor}">${mainDisp}</span>
+        </div>
+      </div>
+      <div class="bar-track">
+        <div class="bar-base-marker" style="width:${basePct}%;"></div>
+        <div class="bar-fill" style="width:${barPct}%;background:${barColor};"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  ['statBlock','mStatBlock'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=html; });
+}
+
+// ── LOG ───────────────────────────────────────────────────────────────────────
+function renderLog() {
+  const html = state.log.length
+    ? state.log.map(l => `<div class="log-entry">
+        <span class="log-name">${l.name}</span>
+        <span class="log-changes">${l.changes.join(' · ')}</span>
+      </div>`).join('')
+    : '<div style="font-size:11px;color:var(--text3);padding:6px 8px;">No actions yet.</div>';
+  ['logList','mLogList'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=html; });
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function renderTabs() {
+  const cats = ['All', ...state.cats.map(c => c.name)];
+  const html = cats.map(c => `<button class="tab ${activeCat===c?'active':''}" onclick="setcat('${c}')">${c}</button>`).join('') +
+    `<button class="tab tab-manage" onclick="openCatModal()">+ cats</button>`;
+  ['tabBar','mTabBar'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=html; });
+}
+
+function setcat(c) { activeCat = c; renderTabs(); renderTasks(); }
+
+// ── TASKS ─────────────────────────────────────────────────────────────────────
+function renderTasks() {
+  const qDesktop = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase() : '';
+  const qMobile = document.getElementById('mSearchInput') ? document.getElementById('mSearchInput').value.toLowerCase() : '';
+  const q = qDesktop || qMobile;
+
+  const filtered = state.tasks.filter(t =>
+    (activeCat === 'All' || t.cat === activeCat) && (!q || t.n.toLowerCase().includes(q))
+  );
+  const countStr = filtered.length + ' tasks';
+  ['taskCount','mTaskCount'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=countStr; });
+  ['editToggle','mEditToggle'].forEach(id => {
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.classList.toggle('on', editMode);
+    el.textContent = editMode ? 'Done' : 'Edit mode';
+  });
+
+  const html = filtered.map(t => {
+    const tags = Object.entries(t.fx).map(([k,v]) =>
+      `<span class="fx-tag ${v>0?'fx-pos':'fx-neg'}">${v>0?'+':''}${v} ${k}</span>`
+    ).join('');
+    const sel = queue.has(t.id);
+    const sc = safeCatClass(t.cat);
+    const editBtns = editMode
+      ? `<div class="task-actions" onclick="event.stopPropagation()">
+           <button class="task-edit-btn" onclick="openEditModal(${t.id})">Edit</button>
+           <button class="task-del-btn" onclick="quickDeleteTask(${t.id})">Remove</button>
+         </div>` : '';
+    const selStyle = sel ? 'border-color:#f0a030;background:rgba(240,160,48,0.05);' : '';
+    const selLabel = !editMode
+      ? `<span style="font-size:10px;font-weight:700;color:${sel?'#f0a030':'var(--border2)'};flex-shrink:0;">${sel?'✓':'+'}</span>`
+      : '';
+    return `<div class="task-card" data-id="${t.id}" style="${selStyle}" onclick="${editMode?'':'toggleQueue('+t.id+')'}">
+      <div class="task-top">
+        <div class="task-name">${t.n}</div>
+        <div style="display:flex;gap:5px;align-items:center;flex-shrink:0;">
+          ${selLabel}
+          <span class="task-cat cat-${sc}">${t.cat}</span>
+        </div>
+      </div>
+      <div class="task-fx">${tags}</div>
+      ${editBtns}
+    </div>`;
+  }).join('');
+
+  ['tasksGrid','mTasksGrid'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=html; });
+}
+
+// ── QUEUE ─────────────────────────────────────────────────────────────────────
+function toggleQueue(id) {
+  if (editMode) return;
+  queue.has(id) ? queue.delete(id) : queue.add(id);
+  renderTasks(); renderQueueBar();
+}
+
+function clearQueue() { queue.clear(); renderTasks(); renderQueueBar(); }
+
+function commitQueue() {
+  if (!queue.size) return;
+  queue.forEach(taskId => {
+    const task = state.tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const changes = [];
+    Object.entries(task.fx).forEach(([stat, delta]) => {
+      const old = state.stats[stat];
+      state.stats[stat] = clamp(old + delta);
+      const actual = state.stats[stat] - old;
+      if (actual !== 0) changes.push(`${stat} ${actual>0?'+':''}${actual}`);
+    });
+    state.log.unshift({name:task.n, changes});
+    if (state.log.length > 20) state.log.pop();
+    state.sessionCount = (state.sessionCount||0) + 1;
+  });
+  queue.clear();
+  save(); renderStats(); renderLog(); renderTasks(); renderQueueBar();
+}
+
+function renderQueueBar() {
+  const bar = document.getElementById('queueBar');
+  if (!queue.size) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  const names = [...queue].map(id => { const t = state.tasks.find(t=>t.id===id); return t?t.n:''; }).filter(Boolean);
+  document.getElementById('queueCount').textContent = queue.size + (queue.size===1?' task':' tasks') + ' selected';
+  document.getElementById('queueNames').textContent = names.join(' · ');
+}
+
+// ── EDIT MODE ─────────────────────────────────────────────────────────────────
+function toggleEditMode() {
+  editMode = !editMode;
+  renderTasks();
+}
+
+function quickDeleteTask(id) {
+  if (!confirm('Remove this task?')) return;
+  state.tasks = state.tasks.filter(t => t.id !== id);
+  save(); renderTasks();
+}
+
+// ── TASK MODAL ────────────────────────────────────────────────────────────────
+function populateCatSelect() {
+  document.getElementById('taskCatInput').innerHTML =
+    state.cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+}
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Add task';
+  document.getElementById('taskNameInput').value = '';
+  document.getElementById('deleteTaskBtn').style.display = 'none';
+  populateCatSelect();
+  buildStatEditor();
+  document.getElementById('taskModal').classList.add('open');
+}
+
+function openEditModal(id) {
+  const task = state.tasks.find(t => t.id === id);
+  if (!task) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Edit task';
+  document.getElementById('taskNameInput').value = task.n;
+  document.getElementById('deleteTaskBtn').style.display = 'block';
+  populateCatSelect();
+  document.getElementById('taskCatInput').value = task.cat;
+  buildStatEditor(task.fx);
+  document.getElementById('taskModal').classList.add('open');
+}
+
+function deleteCurrentTask() {
+  if (!editingId || !confirm('Delete this task?')) return;
+  state.tasks = state.tasks.filter(t => t.id !== editingId);
+  save(); closeModal('taskModal'); renderTasks();
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  editingId = null;
+}
+
+function buildStatEditor(fx={}) {
+  modalFx = Object.fromEntries(STAT_DEFS.map(s => [s.id, fx[s.id]||0]));
+  document.getElementById('statEditor').innerHTML = STAT_DEFS.map(s => {
+    const v = modalFx[s.id];
+    const cls = v>0?'val-pos':v<0?'val-neg':'val-zero';
+    return `<div class="stat-edit-row">
+      <div class="stat-edit-label">${s.id}</div>
+      <div class="stat-edit-controls">
+        <button class="stat-btn" onclick="adjustFx('${s.id}',-1)">-</button>
+        <span class="stat-val-display ${cls}" id="fxval_${s.id}">${v>0?'+':''}${v}</span>
+        <button class="stat-btn" onclick="adjustFx('${s.id}',+1)">+</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function adjustFx(stat, delta) {
+  modalFx[stat] = Math.max(-9, Math.min(9, (modalFx[stat]||0) + delta));
+  const el = document.getElementById('fxval_'+stat);
+  const v = modalFx[stat];
+  el.textContent = (v>0?'+':'')+v;
+  el.className = 'stat-val-display '+(v>0?'val-pos':v<0?'val-neg':'val-zero');
+}
+
+function saveTask() {
+  const name = document.getElementById('taskNameInput').value.trim();
+  if (!name) { alert('Please enter a task name.'); return; }
+  const cat = document.getElementById('taskCatInput').value;
+  const fx = Object.fromEntries(Object.entries(modalFx).filter(([,v]) => v!==0));
+  if (editingId !== null) {
+    const task = state.tasks.find(t => t.id===editingId);
+    if (task) { task.n=name; task.cat=cat; task.fx=fx; }
+  } else {
+    state.tasks.push({id:nextId++, n:name, cat, fx});
+  }
+  save(); closeModal('taskModal'); renderTasks();
+}
+
+// ── CAT MODAL ────────────────────────────────────────────────────────────────
+function openCatModal() { renderCatList(); document.getElementById('catModal').classList.add('open'); }
+
+function renderCatList() {
+  document.getElementById('catList').innerHTML = state.cats.map((c,i) => {
+    const count = state.tasks.filter(t => t.cat===c.name).length;
+    return `<div class="cat-item">
+      <div class="cat-color-dot" style="background:${c.color}"></div>
+      <span class="cat-item-name">${c.name}</span>
+      <span class="cat-item-count">${count} tasks</span>
+      <button class="cat-item-edit" onclick="renameCat(${i})">rename</button>
+      <button class="cat-item-del" onclick="deleteCat(${i})" title="Delete">×</button>
+    </div>`;
+  }).join('');
+}
+
+function addCategory() {
+  const nameEl = document.getElementById('newCatName');
+  const name = nameEl.value.trim();
+  if (!name) return;
+  if (state.cats.find(c => c.name.toLowerCase()===name.toLowerCase())) { alert('Already exists.'); return; }
+  state.cats.push({name, color: document.getElementById('newCatColor').value});
+  nameEl.value = '';
+  save(); injectCatStyles(); renderCatList(); renderTabs();
+}
+
+function deleteCat(idx) {
+  const cat = state.cats[idx];
+  const count = state.tasks.filter(t => t.cat===cat.name).length;
+  const fallback = state.cats.find((c,i) => i!==idx);
+  if (!fallback) { alert("Can't delete the last category."); return; }
+  if (count > 0 && !confirm(`"${cat.name}" has ${count} tasks — they'll move to "${fallback.name}". Continue?`)) return;
+  state.tasks.forEach(t => { if (t.cat===cat.name) t.cat=fallback.name; });
+  state.cats.splice(idx,1);
+  if (activeCat===cat.name) activeCat='All';
+  save(); injectCatStyles(); renderCatList(); renderTabs(); renderTasks();
+}
+
+function renameCat(idx) {
+  const cat = state.cats[idx];
+  const newName = prompt(`Rename "${cat.name}" to:`, cat.name);
+  if (!newName || newName.trim()===cat.name) return;
+  const trimmed = newName.trim();
+  if (state.cats.find((c,i) => i!==idx && c.name.toLowerCase()===trimmed.toLowerCase())) { alert('Name taken.'); return; }
+  state.tasks.forEach(t => { if (t.cat===cat.name) t.cat=trimmed; });
+  if (activeCat===cat.name) activeCat=trimmed;
+  cat.name = trimmed;
+  save(); injectCatStyles(); renderCatList(); renderTabs(); renderTasks();
+}
+
+// ── CAT STYLES ────────────────────────────────────────────────────────────────
+function injectCatStyles() {
+  let el = document.getElementById('dynCat');
+  if (!el) { el = document.createElement('style'); el.id = 'dynCat'; document.head.appendChild(el); }
+  el.textContent = state.cats.map(c => {
+    const h = c.color;
+    const r = parseInt(h.slice(1,3),16), g = parseInt(h.slice(3,5),16), b = parseInt(h.slice(5,7),16);
+    const sc = safeCatClass(c.name);
+    return `.cat-${sc}{background:rgba(${r},${g},${b},0.12);color:${h};}`;
+  }).join('\n');
+}
+
+// ── END DAY ───────────────────────────────────────────────────────────────────
+function openEndDayModal() {
+  const today = todayKey();
+  document.getElementById('endDayDateLabel').textContent = formatDateShort(new Date());
+
+  // Stat summary
+  const summaryHTML = STAT_DEFS.map(s => {
+    const v = state.stats[s.id];
+    const base = state.sessionBaseline[s.id] || BASE;
+    const d = v - base;
+    const barPct = Math.min((v / 20) * 100, 100);
+    const changeColor = d > 0 ? '#4caf6e' : d < 0 ? '#e04a4a' : 'var(--text3)';
+    return `<div class="end-day-stat-row">
+      <span class="end-day-stat-id" style="color:${s.hex}">${s.id}</span>
+      <div class="end-day-bar-wrap">
+        <div class="end-day-bar-track">
+          <div class="end-day-bar-fill" style="width:${barPct}%;background:${s.hex};"></div>
+        </div>
+      </div>
+      <span class="end-day-change" style="color:${changeColor}">${d>=0?'+':''}${d} → ${v}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('endDaySummary').innerHTML = summaryHTML;
+
+  // Tasks done today
+  const taskNames = state.log.map(l => l.name);
+  document.getElementById('endDayTasks').innerHTML = taskNames.length
+    ? taskNames.map(n => `<span class="day-task-chip">${n}</span>`).join('')
+    : '<span style="font-size:11px;color:var(--text3);">No tasks logged today.</span>';
+
+  document.getElementById('endDayModal').classList.add('open');
+}
+
+function commitEndDay() {
+  const today = state.dayStart || todayKey();
+  // Save to history
+  state.history = state.history || [];
+  // Remove existing entry for today if any
+  state.history = state.history.filter(h => h.date !== today);
+  state.history.push({
+    date: today,
+    stats: {...state.stats},
+    baseline: {...state.sessionBaseline},
+    log: [...state.log],
+    taskNames: state.log.map(l => l.name),
+    actions: state.sessionCount || 0,
+  });
+
+  // Carry forward stats as next baseline
+  state.sessionBaseline = {...state.stats};
+  state.dayStart = todayKey();
+  state.dayCount = (state.dayCount || 1) + 1;
+  state.log = [];
+  state.sessionCount = 0;
+
+  save();
+  closeModal('endDayModal');
+  renderStats();
+  renderLog();
+  renderDateStrip();
+  if (mainTabMode === 'calendar') renderCalendar('calSection','calDaysTracked');
+  if (mobilePanel === 'calendar') renderCalendar('mCalSection','mCalDaysTracked');
+}
+
+// ── RESET (session only, no day save) ─────────────────────────────────────────
+function confirmReset() {
+  if (!confirm('Reset session? Stats return to today\'s baseline and log clears. Day is NOT saved.')) return;
+  state.stats = {...state.sessionBaseline};
+  state.log = []; state.sessionCount = 0;
+  queue.clear();
+  save(); renderStats(); renderLog(); renderTasks(); renderQueueBar();
+}
+
+// ── CALENDAR ──────────────────────────────────────────────────────────────────
+function renderCalendar(sectionId, countId) {
+  const section = document.getElementById(sectionId);
+  const countEl = document.getElementById(countId);
+  if (!section) return;
+
+  const history = state.history || [];
+  const histMap = {};
+  history.forEach(h => { histMap[h.date] = h; });
+
+  if (countEl) countEl.textContent = history.length + ' day' + (history.length!==1?'s':'') + ' tracked';
+
+  // Calendar nav
+  const y = calViewDate.getFullYear();
+  const m = calViewDate.getMonth();
+  const monthName = calViewDate.toLocaleDateString('en-IN', {month:'long', year:'numeric'});
+
+  const firstDay = new Date(y, m, 1);
+  const lastDay = new Date(y, m+1, 0);
+  const startDow = firstDay.getDay(); // 0=Sun
+  const todayStr = todayKey();
+
+  const dows = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+  let cells = '';
+  // Day of week headers
+  cells += dows.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+  // Leading empty cells
+  for (let i = 0; i < startDow; i++) cells += `<div class="cal-cell empty"></div>`;
+
+  // Day cells
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    const key = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = key === todayStr;
+    const hasData = !!histMap[key];
+    let cls = 'cal-cell';
+    if (isToday) cls += ' today';
+    if (hasData) cls += ' has-data';
+
+    // Score badge
+    let scoreBadge = '';
+    if (hasData) {
+      const h = histMap[key];
+      const total = Object.values(h.stats).reduce((a,b) => a+b, 0);
+      const base = Object.values(h.baseline || {}).reduce((a,b) => a+b, 0) || STAT_DEFS.length * BASE;
+      const delta = total - base;
+      const color = delta > 0 ? '#4caf6e' : delta < 0 ? '#e04a4a' : 'var(--text3)';
+      scoreBadge = `<span style="font-size:8px;color:${color};font-family:'Space Mono',monospace;font-weight:700;margin-top:1px;">${delta>0?'+':''}${delta}</span>`;
+    }
+
+    cells += `<div class="${cls}" onclick="openDayDetail('${key}')">
+      <span class="cal-num">${d}</span>
+      ${scoreBadge}
+    </div>`;
+  }
+
+  section.innerHTML = `
+    <div class="cal-header">
+      <span class="cal-month">${monthName}</span>
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="calNav(-1,'${sectionId}','${countId}')">‹</button>
+        <button class="cal-nav-btn" onclick="calNav(0,'${sectionId}','${countId}')">•</button>
+        <button class="cal-nav-btn" onclick="calNav(1,'${sectionId}','${countId}')">›</button>
+      </div>
+    </div>
+    <div class="cal-grid">${cells}</div>
+  `;
+}
+
+function calNav(dir, sectionId, countId) {
+  if (dir === 0) {
+    calViewDate = new Date();
+  } else {
+    const y = calViewDate.getFullYear();
+    const m = calViewDate.getMonth() + dir;
+    calViewDate = new Date(y, m, 1);
+  }
+  renderCalendar(sectionId, countId);
+}
+
+function openDayDetail(key) {
+  const history = state.history || [];
+  const h = history.find(x => x.date === key);
+  const d = parseKey(key);
+  const dateLabel = d.toLocaleDateString('en-IN', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+  document.getElementById('dayDetailTitle').textContent = dateLabel;
+
+  if (!h) {
+    const isToday = key === todayKey();
+    document.getElementById('dayDetailContent').innerHTML = isToday
+      ? `<div style="font-size:12px;color:var(--text3);margin-bottom:12px;">Today's session is in progress. End the day to save it.</div>`
+      : `<div class="no-data-msg">No data recorded for this day.</div>`;
+    document.getElementById('dayDetailModal').classList.add('open');
+    return;
+  }
+
+  const baseline = h.baseline || Object.fromEntries(STAT_DEFS.map(s => [s.id, BASE]));
+  const total = Object.values(h.stats).reduce((a,b) => a+b, 0);
+  const baseTotal = Object.values(baseline).reduce((a,b) => a+b, 0);
+  const delta = total - baseTotal;
+  const deltaStr = (delta >= 0 ? '+' : '') + delta;
+  const deltaColor = delta > 0 ? '#4caf6e' : delta < 0 ? '#e04a4a' : 'var(--text3)';
+
+  const statsRows = STAT_DEFS.map(s => {
+    const v = h.stats[s.id] || BASE;
+    const b = baseline[s.id] || BASE;
+    const d2 = v - b;
+    const barPct = Math.min((v / 20) * 100, 100);
+    const valColor = d2 > 0 ? '#4caf6e' : d2 < 0 ? '#e04a4a' : 'var(--text3)';
+    return `<div class="day-stat-row">
+      <span class="day-stat-id" style="color:${s.hex}">${s.id}</span>
+      <div class="day-stat-bar-wrap">
+        <div class="day-stat-bar-track">
+          <div class="day-stat-bar-fill" style="width:${barPct}%;background:${s.hex};"></div>
+        </div>
+      </div>
+      <span class="day-stat-val" style="color:${valColor}">${d2>=0?'+':''}${d2} → ${v}</span>
+    </div>`;
+  }).join('');
+
+  const tasksHTML = h.taskNames && h.taskNames.length
+    ? h.taskNames.map(n => `<span class="day-task-chip">${n}</span>`).join('')
+    : '<span style="font-size:11px;color:var(--text3);">No tasks logged.</span>';
+
+  document.getElementById('dayDetailContent').innerHTML = `
+    <div style="display:flex;justify-content:space-between;margin-bottom:12px;align-items:center;">
+      <span style="font-size:11px;color:var(--text3);">${h.actions || 0} actions logged</span>
+      <span style="font-size:14px;font-weight:800;font-family:'Space Mono',monospace;color:${deltaColor}">${deltaStr} total</span>
+    </div>
+    <div style="margin-bottom:12px;">${statsRows}</div>
+    <div class="day-detail-tasks">
+      <div class="day-detail-tasks-label">Tasks</div>
+      ${tasksHTML}
+    </div>
+  `;
+  document.getElementById('dayDetailModal').classList.add('open');
+}
+
+// ── MODAL OVERLAY CLOSE ───────────────────────────────────────────────────────
+['taskModal','catModal','endDayModal','dayDetailModal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target===this) closeModal(id);
+  });
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+// Ensure sessionBaseline exists (migration from v3)
+if (!state.sessionBaseline) {
+  state.sessionBaseline = Object.fromEntries(STAT_DEFS.map(s => [s.id, BASE]));
+}
+if (!state.history) state.history = [];
+if (!state.dayCount) state.dayCount = 1;
+if (!state.dayStart) state.dayStart = todayKey();
+
+injectCatStyles();
+renderDateStrip();
+renderStats();
+renderLog();
+renderTabs();
+renderTasks();
+renderQueueBar();
+</script>
+</body>
+</html>
